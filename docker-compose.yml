@@ -1,0 +1,44 @@
+version: "3"
+services:
+    nagdom_grafana:
+        build: ./nagdom.grafana
+        ports:
+        - "81:3000"
+        links:
+        - nagdom_influxdb    
+        - nagdom_elasticsearch    
+    nagdom_influxdb:
+        build: ./nagdom.influxdb
+        environment:
+        - PRE_CREATE_DB=metrics
+        - ADMIN_USER=alertsense
+        - INFLUX_INIT_PWD=alertsense123
+        volumes:
+        - ./data/influxdb:/var/lib/influxdb/data
+        ports:
+        - "8083:8083"
+        - "8086:8086"
+    nagdom_elasticsearch:
+        build: ./nagdom.elasticsearch
+        ports:
+        - "9200:9200"
+        esdata1:/usr/share/elasticsearch/data
+    nagdom_kibana:
+        build: ./nagdom.kibana
+        ports:
+        - "5601:5601"
+        depends_on:
+        - nagdom_elasticsearch
+        environment:
+            SERVER_NAME: nagdom
+            ELASTICSEARCH_USERNAME: nagdom
+            ELASTICSEARCH_PASSWORD: alertsense123
+            ELASTICSEARCH_URL: http://nagdom_elasticsearch:9200
+volumes:
+  esdata1:
+    driver: local
+  esdata2:
+    driver: local
+networks:
+  nagdom:
+    driver: bridge
