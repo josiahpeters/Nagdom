@@ -1,0 +1,12 @@
+filebeat.prospectors:
+- input_type: log
+  paths: ["logs/*.log","y:/msu/logs/prod-hickory/prod-admin-json.log"]
+  json.message_key: message
+  json.keys_under_root: true
+  fields:
+        tags: ['json']
+
+output.elasticsearch:
+  hosts: ["dev.nagdom.com:9200"]
+  template.name: alertsense
+  template.path: filebeat.template.json

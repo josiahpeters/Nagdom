@@ -1,44 +1,92 @@
 version: "3"
 services:
     nagdom_grafana:
-        build: ./nagdom.grafana
-        ports:
-        - "81:3000"
+        image: grafana/grafana        
+        depends_on:
+        - nagdom_influxdb
+        - nagdom_elasticsearch
         links:
         - nagdom_influxdb    
-        - nagdom_elasticsearch    
+        - nagdom_elasticsearch
+        volumes: 
+        - grafanadata:/var/lib/grafana
+        ports:
+        - "3000:3000"
+        # networks:
+        #     - nagdom
     nagdom_influxdb:
-        build: ./nagdom.influxdb
+        image: tutum/influxdb
         environment:
         - PRE_CREATE_DB=metrics
         - ADMIN_USER=alertsense
         - INFLUX_INIT_PWD=alertsense123
         volumes:
-        - ./data/influxdb:/var/lib/influxdb/data
+        - influxdata:/var/lib/influxdb/data
         ports:
         - "8083:8083"
         - "8086:8086"
+        # networks:
+        #     - nagdom
     nagdom_elasticsearch:
-        build: ./nagdom.elasticsearch
+        #image: docker.elastic.co/elasticsearch/elasticsearch:5.3.0
+        image: elasticsearch:5.3.0
         ports:
         - "9200:9200"
-        esdata1:/usr/share/elasticsearch/data
+        volumes:
+        - elasticdata2:/usr/share/elasticsearch/data
+        # environment:
+        #     http.host: 0.0.0.0
+        #     transport.host: 127.0.0.1
+        # networks:
+        #     - nagdom
+        # resources:
+            # limits:
+                # memory: 1G
+            # reservations:
+                # memory: 512M
+    # nagdom_logstash:
+    #     image: docker.elastic.co/logstash/logstash:5.3.0
+    #     image: logstash:5.3.0
+    #     depends_on:
+    #     - nagdom_elasticsearch
+    #     links:
+    #     - nagdom_elasticsearch
+    #     volumes:
+    #     - logstashdata:/usr/share/logstash/config/
+    #     ports:
+    #         - "5000:5000"
+    #         - "5000:5000/udp"
+    #     environment:
+    #         # otherwise logstash will keep sending its own logs to itself over and
+    #         # over... not fun
+    #         LOGSPOUT: ignore 
+    #     command: -f /etc/logstash.sample.conf
     nagdom_kibana:
-        build: ./nagdom.kibana
+        # image: docker.elastic.co/kibana/kibana:5.3.0
+        image: kibana:5.3.0
         ports:
         - "5601:5601"
         depends_on:
         - nagdom_elasticsearch
+        links:
+        - nagdom_elasticsearch
         environment:
             SERVER_NAME: nagdom
-            ELASTICSEARCH_USERNAME: nagdom
-            ELASTICSEARCH_PASSWORD: alertsense123
+            ELASTICSEARCH_USERNAME: elastic
+            ELASTICSEARCH_PASSWORD: changeme
             ELASTICSEARCH_URL: http://nagdom_elasticsearch:9200
+        # networks:
+        #     - nagdom
+        
 volumes:
-  esdata1:
-    driver: local
-  esdata2:
-    driver: local
-networks:
-  nagdom:
-    driver: bridge
+    elasticdata2:
+        driver: local
+    influxdata:
+        driver: local
+    grafanadata:
+        driver: local
+    logstashdata:
+        driver: local
+# networks:
+#     nagdom:
+#         driver: bridge
