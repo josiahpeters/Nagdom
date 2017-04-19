@@ -1,1 +1,0 @@
-filebeat.exe -e -c filebeat.iis.yml
